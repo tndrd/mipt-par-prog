@@ -1,48 +1,31 @@
-#include <Methods.hpp>
+#include <Solver.hpp>
 #include <cmath>
 #include <iostream>
 
 int main(int argc, char **argv) {
-  DataT X = 5;
-  DataT T = 1;
+  auto ut0 = [](DataT x) {
+    if (x > 2.25 && x < 2.75)
+      return 1;
+    else
+      return 0;
+  };
 
-  DataT tau = 1e-3;
-  DataT h = 1e-3;
-  DataT a = 1;
+  auto ux0 = [](DataT) { return 0; };
+  auto func = [](DataT, DataT) {return 0;};
 
-  size_t layerSize = X / h;
-  size_t nsteps = T / tau;
+  auto problem = CreateProblem(func, ux0, ut0);
+  
+  problem.Borders.T = 10;
+  problem.Borders.X = 5;
 
-  std::vector<DataBufT> layers(nsteps, DataBufT(layerSize, 0));
+  problem.Problem.A = 1;
 
-  layers[0] = DataBufT(layerSize, 0);
+  problem.Steps.H = 1e-3;
+  problem.Steps.T = 1e-3;
 
-  int start = int(2.5f / h);
-  int hwidth = int(0.1f / h);
-  DataT val = 1;
+  MPISolver::SolverConfig conf;
+  conf.Name = "out";
+  conf.Write = false;
 
-  for (int i = start - hwidth; i < start + hwidth; ++i)
-    layers[0][i] = val;
-
-  auto dummyFunc = [](DataT x, DataT t) { return 0; };
-
-  for (size_t k = 1; k < nsteps; ++k) {
-    std::unique_ptr<InputGet> getter =
-        std::make_unique<InputGet>(layers[k - 1]);
-    auto putter = std::make_unique<DummyPut>();
-    auto method = MethodFactory::CreateLCorner(a, tau, h, k, dummyFunc);
-
-    Layer layer{std::move(method), std::move(getter), std::move(putter)};
-    layer.Process(layers[k], 1, layerSize);
-  }
-
-  std::cout << h << " " << tau << std::endl;
-
-  for (const auto &layer : layers) {
-    for (const auto u : layer)
-      std::cout << u << " ";
-    std::cout << "\n";
-  }
-
-  return 0;
+  MPISolver::Participate<LCornerMethod>(problem, conf);
 }

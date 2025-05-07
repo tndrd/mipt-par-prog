@@ -79,14 +79,14 @@ struct DummyPut final: public PutStrategy {
   void Put(DataT value) override {}
 };
 
-struct Layer final {
+struct LayerSolver final {
 private:
   GetStrategy::Ptr Getter;
   PutStrategy::Ptr Putter;
   IMethod::Ptr Method;
 
 public:
-  Layer(IMethod::Ptr &&method, GetStrategy::Ptr &&getter,
+  LayerSolver(IMethod::Ptr &&method, GetStrategy::Ptr &&getter,
         PutStrategy::Ptr &&putter)
       : Getter(std::move(getter)), Putter(std::move(putter)),
         Method(std::move(method)) {}
@@ -103,6 +103,9 @@ public:
     if (end > buf.size() - Method->GetRStride())
       throw std::runtime_error(
           "Metod can't start as some of values on right are unknown");
+
+    for (int i = start - Method->GetLStride(); i < start; ++i)
+      Putter->Put(buf[i]);
 
     for (int i = 0; i < Method->GetLStride() + Method->GetRStride() + 1; ++i)
       cache.push_back(Getter->Get());

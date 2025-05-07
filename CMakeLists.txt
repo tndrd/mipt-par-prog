@@ -23,4 +23,4 @@ target_link_libraries(2-Admission PRIVATE MPI::MPI_CXX)
 
 add_executable(2-Test 2-conv-diff/Src/Test.cpp)
 target_include_directories(2-Test PRIVATE 2-conv-diff/Inc)
-target_include_directories(2-Test PRIVATE MPI::MPI_CXX)
+target_link_libraries(2-Test PRIVATE MPI::MPI_CXX)

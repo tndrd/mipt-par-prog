@@ -1,22 +1,38 @@
 import sys
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import glob
 
-path = sys.argv[-1]
+prefix = sys.argv[-1]
+paths = glob.glob(prefix+"*")
 
-with open(path, "r") as f:
-  lines = f.readlines()
-  for i in tqdm(range(len(lines))):
-    lines[i] = list(map(float, lines[i].split()))
+print(paths)
+with open(paths[0], "r") as f:
+  line = f.readline()
+  h, t = map(float, line.split())
 
-h, t = lines[0]
+  line = f.readline()
+  nlayers, lsize = map(int, line.split())
 
-plt.pcolormesh(lines[1:], cmap="inferno")
+layers = [None]*(nlayers)
+print(nlayers)
 
-xtics = range(0, len(lines[1]), len(lines[1])//10)
+for path in paths:
+  with open(path, "r") as f:
+    lines = f.readlines()
+    for i in tqdm(range(2, len(lines))):
+      tokens = lines[i].split()
+      k = int(tokens[0])
+      data = list(map(float, tokens[1:]))
+      if (k>=nlayers): print(k)
+      layers[k] = data
+
+plt.pcolormesh(layers, cmap="inferno")
+
+xtics = range(0, len(layers[0]), len(layers[0])//10)
 xlabels = [str(x * h) for x in xtics]
 
-ytics = range(0, len(lines), len(lines)//10)
+ytics = range(0, len(layers), len(layers)//10)
 ylabels = [str(t * y) for y in ytics]
 
 
