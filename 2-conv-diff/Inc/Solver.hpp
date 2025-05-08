@@ -6,6 +6,7 @@
 #include <fstream>
 
 template <typename F, typename Fx0T, typename Ft0T> struct ProblemConfig {
+public:
   struct {
     DataT X;
     DataT T;
@@ -17,25 +18,25 @@ template <typename F, typename Fx0T, typename Ft0T> struct ProblemConfig {
   } Steps;
 
   struct {
-    Fx0T Fx0;
-    Ft0T Ft0;
-  } BoundCond;
-
-  struct {
     DataT A;
-    F Func;
   } Problem;
+
+  F Func;
+  Fx0T Fx0;
+  Ft0T Ft0;
+
+public:
+  struct Default {
+    static constexpr decltype(Borders) DBorders = {1, 1};
+    static constexpr decltype(Steps) DSteps = {1e-3, 1e-3};
+    static constexpr decltype(Problem) DProblem = {1};
+  };
+
+public:
+  ProblemConfig(F func, Fx0T fx0, Ft0T ft0)
+      : Func{func}, Fx0{fx0}, Ft0{ft0}, Borders{Default::DBorders},
+        Steps{Default::DSteps}, Problem{Default::DProblem} {}
 };
-
-template <typename F, typename Fx0T, typename Ft0T>
-auto CreateProblem(F func, Fx0T fx0, Ft0T ft0) {
-  auto problem = ProblemConfig<F, Fx0T, Ft0T>{};
-  problem.BoundCond.Ft0 = ft0;
-  problem.BoundCond.Fx0 = fx0;
-  problem.Problem.Func = func;
-
-  return problem;
-}
 
 class MPISolver {
 private:
@@ -158,19 +159,20 @@ public:
 
     Output out(config.Name, selfRank, config.Write);
     out.PutHeader(problem.Steps.H, problem.Steps.T, nLayers + 1, layerSize);
+    if (selfRank == 0)
+      std::cout << "n x k == " << layerSize << " x " << nLayers << std::endl;
 
     DataBufT layerBuf(layerSize, 0);
     DataBufT auxBuf = layerBuf;
 
     auto create_method = [&](size_t k) {
       return std::make_unique<Method<F>>(problem.Problem.A, problem.Steps.T,
-                                         problem.Steps.H, k,
-                                         problem.Problem.Func);
+                                         problem.Steps.H, k, problem.Func);
     };
 
     if (selfRank == 0) { // Master
       for (int i = 0; i < layerSize; ++i)
-        auxBuf[i] = problem.BoundCond.Ft0(i * problem.Steps.H);
+        auxBuf[i] = problem.Ft0(i * problem.Steps.H);
 
       out.PutLine(0, auxBuf);
     }
@@ -182,7 +184,7 @@ public:
 
     for (int i = 0; i < nsteps; ++i) {
       if (selfRank == 0)
-        std::cout << i << " / " << nsteps << "\r";
+        std::cout << i + 1 << " / " << nsteps << "\r";
 
       size_t k = i * commSize + selfRank + 1;
       if (k > nLayers)
@@ -198,18 +200,20 @@ public:
       if (selfRank == left)
         getter = std::move(std::make_unique<InputGet>(auxBuf));
       else
-        getter = std::move(std::make_unique<MPIGetter>(prev, config.BufferSize));
+        getter =
+            std::move(std::make_unique<MPIGetter>(prev, config.BufferSize));
 
       if (selfRank == right)
         putter = std::move(std::make_unique<DummyPut>());
       else
-        putter = std::move(std::make_unique<MPIPutter>(next, config.BufferSize));
+        putter =
+            std::move(std::make_unique<MPIPutter>(next, config.BufferSize));
 
       auto method = create_method(k);
       size_t lstride = method->GetLStride();
       size_t rstride = method->GetRStride();
 
-      layerBuf[0] = problem.BoundCond.Fx0(k * problem.Steps.T);
+      layerBuf[0] = problem.Fx0(k * problem.Steps.T);
       LayerSolver solver(std::move(method), std::move(getter),
                          std::move(putter));
 
@@ -219,6 +223,7 @@ public:
       std::swap(auxBuf, layerBuf);
     }
 
-    if (selfRank == 0) std::cout << std::endl;
+    if (selfRank == 0)
+      std::cout << std::endl;
   }
 };

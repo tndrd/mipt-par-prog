@@ -1,0 +1,6 @@
+Admission ./2-Admission <nreps> <nsends>
+  $> time mpirun -np 2 ./2-Admission 100 10000
+
+Task: time mpirun -np <NPROC> ./2-Task [OUT_NAME]
+  $> time mpirun -np <NPROC> ./2-Task out
+  $> python3 ../2-conv-diff/Scripts/plot.py out

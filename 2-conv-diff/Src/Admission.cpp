@@ -28,34 +28,39 @@ timespec GetTimeDiff(timespec ts1, timespec ts2) {
 }
 
 double Timespec2Ms(timespec ts) {
-  double ms = ts.tv_sec * 1000 + float(ts.tv_nsec) / 1000;
+  double ms = ts.tv_sec * 1000 + float(ts.tv_nsec) / (1000 * 1000);
   return ms;
 }
 
-void TxRoutine(double &timeval, MPILogger& log) {
-  auto start = GetTimespec();
-  int dummy = 0;
-  MPI::COMM_WORLD.Ssend(&dummy, 1, MPI::INT, 1, 42);
-  auto end = GetTimespec();
+void TxRoutine(double &timeval, MPILogger &log, size_t nsends) {
+  for (size_t i = 0; i < nsends; ++i) {
+    auto start = GetTimespec();
+    int dummy = 0;
+    MPI::COMM_WORLD.Send(&dummy, 1, MPI::INT, 1, 42);
+    auto end = GetTimespec();
 
-  auto timems = Timespec2Ms(GetTimeDiff(start, end));
-  log << timems << MPILogger::endl;
+    auto timems = Timespec2Ms(GetTimeDiff(start, end));
+    //log << timems << MPILogger::endl;
 
-  timeval += timems;
+    timeval += timems;
+  }
 }
 
-void RxRoutine() {
-  int dummy = 0;
-  MPI::COMM_WORLD.Recv(&dummy, 1, MPI::INT, MPI::ANY_SOURCE, MPI::ANY_TAG);
+void RxRoutine(size_t nsends) {
+  for (size_t i = 0; i < nsends; ++i) {
+    int dummy = 0;
+    MPI::COMM_WORLD.Recv(&dummy, 1, MPI::INT, 0, MPI::ANY_TAG);
+  }
 }
 
 int main(int argc, char *argv[]) try {
   MPI::Init(argc, argv);
   Defer _([] { MPI::Finalize(); });
 
-  MPILogger log ("log.txt", "Master");
+  MPILogger log("log.txt", "Master");
 
-  size_t nreps = std::stoul(argv[argc - 1]);
+  size_t nreps = std::stoul(argv[argc - 2]);
+  size_t nsends = std::stoul(argv[argc - 1]);
 
   const int csize = MPI::COMM_WORLD.Get_size();
   const int crank = MPI::COMM_WORLD.Get_rank();
@@ -67,15 +72,15 @@ int main(int argc, char *argv[]) try {
 
   for (size_t i = 0; i < nreps; ++i) {
     if (crank == 0)
-      TxRoutine(time, log);
+      TxRoutine(time, log, nsends);
     if (crank == 1)
-      RxRoutine();
+      RxRoutine(nsends);
   }
 
   if (crank == 1)
     return 0;
 
-  std::cout << "Avg wall time for Ssend: " << time / nreps << "ms" << std::endl;
+  std::cout << "Avg wall time for Send: " << 1000 * time / (nreps * nsends) << "us" << std::endl;
 
   return 0;
 } catch (std::exception &e) {

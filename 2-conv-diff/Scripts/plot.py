@@ -2,9 +2,14 @@ import sys
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import glob
+import numpy as np
+
+T_STEP = 3 
 
 prefix = sys.argv[-1]
 paths = glob.glob(prefix+"*")
+
+nlayers, lsize = None, None
 
 print(paths)
 with open(paths[0], "r") as f:
@@ -27,20 +32,34 @@ for path in paths:
       if (k>=nlayers): print(k)
       layers[k] = data
 
-plt.pcolormesh(layers, cmap="inferno")
+for i, layer in enumerate(layers[::-1]):
+  if layer is None: layers.pop()
+
+fig, (lfig, rfig) = plt.subplots(1, 2)
+
+mesh = lfig.pcolormesh(layers, cmap="inferno")
 
 xtics = range(0, len(layers[0]), len(layers[0])//10)
 xlabels = [str(x * h) for x in xtics]
 
 ytics = range(0, len(layers), len(layers)//10)
-ylabels = [str(t * y) for y in ytics]
+ylabels = [str(round(t * y, 1)) for y in ytics]
 
+lfig.set_xlabel("x")
+lfig.set_xticks(xtics, xlabels)
 
-plt.xlabel("x")
-plt.xticks(xtics, xlabels)
+lfig.set_ylabel("t")
+lfig.set_yticks(ytics, ylabels)
 
-plt.ylabel("t")
-plt.yticks(ytics, ylabels)
+X = np.arange(0, lsize) * h
 
-plt.colorbar()
+for t, lt in zip(ytics[::T_STEP], ylabels[::T_STEP]):
+  rfig.plot(X, layers[t], label=f"t = {lt}")
+
+rfig.set_xlabel("x")
+rfig.set_ylabel("u")
+rfig.grid()
+plt.legend()
+plt.colorbar(mesh)
+plt.suptitle("Уравнение переноса")
 plt.show()
