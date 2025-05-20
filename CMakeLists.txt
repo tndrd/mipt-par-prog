@@ -24,3 +24,9 @@ target_link_libraries(2-Admission PRIVATE MPI::MPI_CXX)
 add_executable(2-Task 2-conv-diff/Src/Task.cpp)
 target_include_directories(2-Task PRIVATE 2-conv-diff/Inc)
 target_link_libraries(2-Task PRIVATE MPI::MPI_CXX)
+
+add_executable(3-HelloWorld 3-pthread-intro/Src/3-HelloWorld.cpp)
+target_link_libraries(3-HelloWorld PRIVATE pthread)
+
+add_executable(3-SeriesSum 3-pthread-intro/Src/3-SeriesSum.cpp)
+target_link_libraries(3-SeriesSum PRIVATE pthread)
