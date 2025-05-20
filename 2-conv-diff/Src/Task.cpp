@@ -40,5 +40,5 @@ int main(int argc, char **argv) {
   conf.Name = outName ? outName : "";
   conf.Write = outName;
 
-  MPISolver::Participate<LCornerMethod>(problem, conf);
+  MPISolver::Participate<RectMethod>(problem, conf);
 }
