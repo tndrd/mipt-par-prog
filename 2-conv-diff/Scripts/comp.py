@@ -23,11 +23,7 @@ def load(prefix):
         tokens = lines[i].split()
         k = int(tokens[0])
         data = list(map(float, tokens[1:]))
-        if (k>=nlayers): print(k)
         layers[k] = data
-
-  for i, layer in enumerate(layers[::-1]):
-    if layer is None: layers.pop()
 
   return np.array(layers)
 
