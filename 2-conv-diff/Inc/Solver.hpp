@@ -182,11 +182,11 @@ public:
 
     size_t nsteps = nLayers / commSize;
 
-    for (int i = 0; i < nsteps; ++i) {
+    for (int i = 0;; ++i) {
       if (selfRank == 0)
-        std::cout << i + 1 << " / " << nsteps << "\r";
+        std::cout << i << " / " << nsteps << "\r";
 
-      size_t k = i * commSize + selfRank + 1;
+      size_t k = i * commSize + mod(selfRank + i, commSize) + 1;
       if (k > nLayers)
         break;
 
