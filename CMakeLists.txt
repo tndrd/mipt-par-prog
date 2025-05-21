@@ -30,3 +30,6 @@ target_link_libraries(3-HelloWorld PRIVATE pthread)
 
 add_executable(3-SeriesSum 3-pthread-intro/Src/3-SeriesSum.cpp)
 target_link_libraries(3-SeriesSum PRIVATE pthread)
+
+add_executable(3-SequentialAccess 3-pthread-intro/Src/3-SequentialAccess.cpp)
+target_link_libraries(3-SequentialAccess PRIVATE pthread)
