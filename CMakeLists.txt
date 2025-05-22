@@ -33,3 +33,7 @@ target_link_libraries(3-SeriesSum PRIVATE pthread)
 
 add_executable(3-SequentialAccess 3-pthread-intro/Src/3-SequentialAccess.cpp)
 target_link_libraries(3-SequentialAccess PRIVATE pthread)
+
+add_executable(4-Integrate 4-Integrate/Src/4-Integrate.cpp)
+target_include_directories(4-Integrate PRIVATE 4-Integrate/Inc)
+target_link_libraries(4-Integrate PRIVATE pthread)
